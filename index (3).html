@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>ヤフオク入札上限チェッカー</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN",
+        "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      width: min(100%, 680px);
+      margin: 0 auto;
+      padding: 20px 16px 36px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.35;
+    }
+
+    .sub {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .prefix,
+    .suffix {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    .prefix { left: 14px; }
+    .suffix { right: 14px; }
+
+    input {
+      width: 100%;
+      height: 56px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fff;
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 700;
+      outline: none;
+      padding: 0 14px;
+      appearance: none;
+    }
+
+    input.with-prefix { padding-left: 34px; }
+    input.with-suffix { padding-right: 36px; }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .result {
+      text-align: center;
+      padding: 22px 18px;
+    }
+
+    .result-label {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .result-value {
+      font-size: clamp(38px, 10vw, 58px);
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      overflow-wrap: anywhere;
+    }
+
+    .result-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .breakdown {
+      display: grid;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .row span:first-child {
+      color: var(--muted);
+    }
+
+    .warning {
+      display: none;
+      margin-top: 14px;
+      border: 1px solid #fecaca;
+      background: var(--danger-bg);
+      color: var(--danger);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .formula {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    button {
+      width: 100%;
+      height: 50px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--text);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    @media (min-width: 640px) {
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .grid-2 .field {
+        margin-bottom: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>ヤフオク入札上限チェッカー</h1>
+    <p class="sub">売価・手数料・送料・欲しい利益を入れるだけで、いくらまで入札できるか即計算。</p>
+
+    <section class="card">
+      <div class="field">
+        <label for="salePrice">想定売価</label>
+        <div class="input-wrap">
+          <span class="prefix">¥</span>
+          <input id="salePrice" class="with-prefix" type="number" inputmode="numeric" min="0" step="100" value="50000" />
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="feeRate">販売手数料</label>
+          <div class="input-wrap">
+            <input id="feeRate" class="with-suffix" type="number" inputmode="decimal" min="0" max="100" step="0.1" value="10" />
+            <span class="suffix">%</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="shipping">送料</label>
+          <div class="input-wrap">
+            <span class="prefix">¥</span>
+            <input id="shipping" class="with-prefix" type="number" inputmode="numeric" min="0" step="10" value="750" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:16px;">
+        <label for="profit">欲しい利益</label>
+        <div class="input-wrap">
+          <span class="prefix">¥</span>
+          <input id="profit" class="with-prefix" type="number" inputmode="numeric" min="0" step="100" value="10000" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="otherCost">その他経費</label>
+        <div class="input-wrap">
+          <span class="prefix">¥</span>
+          <input id="otherCost" class="with-prefix" type="number" inputmode="numeric" min="0" step="10" value="0" />
+        </div>
+      </div>
+
+      <button id="resetBtn" type="button">初期値に戻す</button>
+    </section>
+
+    <section class="card result">
+      <div class="result-label">ここまでなら入札OK</div>
+      <div id="maxBid" class="result-value">¥34,250</div>
+      <div id="resultNote" class="result-note">この金額で仕入れれば、利益 ¥10,000 を確保できます。</div>
+      <div id="warning" class="warning">この条件では仕入れ可能額がありません。</div>
+    </section>
+
+    <section class="card">
+      <div class="breakdown">
+        <div class="row"><span>想定売価</span><strong id="sumSale">¥50,000</strong></div>
+        <div class="row"><span>販売手数料</span><span id="sumFee">− ¥5,000</span></div>
+        <div class="row"><span>送料</span><span id="sumShipping">− ¥750</span></div>
+        <div class="row"><span>その他経費</span><span id="sumOther">− ¥0</span></div>
+        <div class="row"><span>欲しい利益</span><span id="sumProfit">− ¥10,000</span></div>
+      </div>
+      <div class="formula">想定売価 − 販売手数料 − 送料 − その他経費 − 欲しい利益 ＝ 入札上限</div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const salePrice = document.getElementById("salePrice");
+      const feeRate = document.getElementById("feeRate");
+      const shipping = document.getElementById("shipping");
+      const profit = document.getElementById("profit");
+      const otherCost = document.getElementById("otherCost");
+      const resetBtn = document.getElementById("resetBtn");
+
+      const maxBid = document.getElementById("maxBid");
+      const resultNote = document.getElementById("resultNote");
+      const warning = document.getElementById("warning");
+      const sumSale = document.getElementById("sumSale");
+      const sumFee = document.getElementById("sumFee");
+      const sumShipping = document.getElementById("sumShipping");
+      const sumOther = document.getElementById("sumOther");
+      const sumProfit = document.getElementById("sumProfit");
+
+      const yen = (value) =>
+        "¥" + Math.round(Math.max(0, value)).toLocaleString("ja-JP");
+
+      const num = (el) => {
+        const value = Number(el.value);
+        return Number.isFinite(value) && value >= 0 ? value : 0;
+      };
+
+      function calculate() {
+        const sale = num(salePrice);
+        const rate = Math.min(100, num(feeRate));
+        const ship = num(shipping);
+        const desiredProfit = num(profit);
+        const other = num(otherCost);
+
+        const fee = sale * rate / 100;
+        const bid = sale - fee - ship - desiredProfit - other;
+
+        maxBid.textContent = bid >= 0 ? yen(bid) : "¥0";
+        sumSale.textContent = yen(sale);
+        sumFee.textContent = "− " + yen(fee);
+        sumShipping.textContent = "− " + yen(ship);
+        sumOther.textContent = "− " + yen(other);
+        sumProfit.textContent = "− " + yen(desiredProfit);
+
+        if (bid < 0) {
+          warning.style.display = "block";
+          resultNote.textContent = "売価に対して、手数料・送料・経費・希望利益の合計が大きすぎます。";
+        } else {
+          warning.style.display = "none";
+          resultNote.textContent =
+            "この金額で仕入れれば、利益 " + yen(desiredProfit) + " を確保できます。";
+        }
+      }
+
+      [salePrice, feeRate, shipping, profit, otherCost].forEach((el) => {
+        el.addEventListener("input", calculate);
+      });
+
+      resetBtn.addEventListener("click", () => {
+        salePrice.value = 50000;
+        feeRate.value = 10;
+        shipping.value = 750;
+        profit.value = 10000;
+        otherCost.value = 0;
+        calculate();
+        salePrice.focus();
+      });
+
+      calculate();
+    })();
+  </script>
+</body>
+</html>
